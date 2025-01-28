@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dinosaur Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      display: block;
+    }
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #f4f4f4;
+      overflow: hidden;
+    }
+    .mobile-controls {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    .control-btn {
+      width: 80px;
+      height: 80px;
+      background: #ccc;
+      border-radius: 50%;
+      border: none;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      cursor: pointer;
+    }
+    .control-btn:active {
+      background: #bbb;
+    }
+    .fullscreen-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .fullscreen-btn:active {
+      background-color: #bbb;
+    }
+  </style>
+</head>
+<body>
+<div id="game">
+  <canvas id="gameCanvas"></canvas>
+  <div class="mobile-controls">
+    <button class="control-btn" onclick="jump()">Jump</button>
+  </div>
+  <button class="fullscreen-btn" onclick="toggleFullScreen()">Go Fullscreen</button>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // Game variables
+  const dinoImage = new Image();
+  const obstacleImage = new Image();
+  const backgroundImage = new Image(); // Background image variable
+
+  dinoImage.src = 'https://i.postimg.cc/WzHpW2zW/image.png';
+  obstacleImage.src = 'https://i.postimg.cc/N0ksh8Lr/pngtree-heighted-cliff-cartoon-rock-png-image-5236659-removebg-preview.png';
+  backgroundImage.src = 'https://i.postimg.cc/gcTYP2c4/forest-nature-scene-for-cartoon-animation-vector.jpg'; // Set your background image URL here
+
+  let dino = { x: 50, y: canvas.height - 100, width: 100, height: 100, dy: 0, isJumping: false, color: 'green' };
+  let obstacles = [];
+  let score = 0;
+  let gameSpeed = 5;
+
+  // Ensure images are loaded before starting the game
+  let assetsLoaded = 0;
+  dinoImage.onload = obstacleImage.onload = backgroundImage.onload = () => {
+    assetsLoaded++;
+    if (assetsLoaded === 3) { // Update to 3 images
+      gameLoop();
+    }
+  };
+
+  dinoImage.onerror = obstacleImage.onerror = backgroundImage.onerror = () => {
+    alert('Failed to load game assets. Please check the image URLs.');
+  };
+
+  // Add obstacles
+  function spawnObstacle() {
+    const height = 50;
+    const width = 30;
+    const x = canvas.width;
+    const y = canvas.height - height;
+    obstacles.push({ x, y, width, height });
+  }
+  setInterval(spawnObstacle, 2000);
+
+  // Game loop
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw background image
+    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+
+    // Draw and update dinosaur
+    dino.y += dino.dy;
+    if (dino.y >= canvas.height - dino.height) {
+      dino.y = canvas.height - dino.height;
+      dino.isJumping = false;
+    }
+    dino.dy += 1; // Gravity
+
+    ctx.drawImage(dinoImage, dino.x, dino.y, dino.width, dino.height);
+
+    // Draw and update obstacles
+    obstacles.forEach((obstacle, index) => {
+      obstacle.x -= gameSpeed;
+      ctx.drawImage(obstacleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+      // Collision detection
+      if (
+        dino.x < obstacle.x + obstacle.width &&
+        dino.x + dino.width > obstacle.x &&
+        dino.y < obstacle.y + obstacle.height &&
+        dino.y + dino.height > obstacle.y
+      ) {
+        alert('Game Over! Your score: ' + score);
+        obstacles = [];
+        score = 0;
+        gameSpeed = 5;
+      }
+
+      // Remove off-screen obstacles
+      if (obstacle.x + obstacle.width < 0) {
+        obstacles.splice(index, 1);
+        score++;  // Increase score
+        if (score % 10 === 0) {
+          gameSpeed += 1; // Increase speed every 10 points
+        }
+      }
+    });
+
+    // Display score
+    ctx.fillStyle = 'black';
+    ctx.font = '24px Arial';
+    ctx.fillText('Score: ' + score, 20, 40);
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Jump function
+  function jump() {
+    if (!dino.isJumping) {
+      dino.dy = -20;
+      dino.isJumping = true;
+    }
+  }
+
+  // Keyboard controls
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') jump();
+  });
+
+  // Toggle fullscreen mode
+  function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+
+  // Resize canvas on fullscreen change
+  document.addEventListener('fullscreenchange', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+</script>
+</body>
+</html>
